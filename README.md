@@ -1,61 +1,34 @@
-# wedding-rsvp[wedding_rsvp（前台_後台）_google_apps_script_版.html](https://github.com/user-attachments/files/22310002/wedding_rsvp._._google_apps_script_.html)
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>婚宴出席回覆（RSVP）</title>
+  <!-- Tailwind：快速排版用 -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js：後台圓餅圖用 -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    .card{box-shadow:0 10px 25px rgba(0,0,0,.05)}
+    .card{box-shadow:0 10px 25px rgba(0,0,0,.06)}
   </style>
-  <!-- 
-  ─────────────────────────────────────────────────────────────────────
-  # 使用說明（請先完整閱讀，再部署）
-  
-  本檔提供「前台填寫」與「後台統計」於同一檔案：
-  - 一般賓客：只看到前台表單（不顯示統計）。
-  - 主辦人（您）：使用 ?admin_key=你的密鑰 進入後台儀表板，隨時查看統計。
-  - 所有資料存到 Google 試算表（透過 Google Apps Script Web App）。
-  
-  ## 快速步驟
-  1) 建立 Google 試算表（建議名稱：RSVP Responses），標頭列 A:F：
-     Timestamp, Name, Attendance, Guests, Meal, Allergies, Note
-  2) 建立 Google Apps Script 專案，貼上下方 GAS 程式（search: GAS_CODE_START），
-     修改 SHEET_ID 與 ADMIN_KEY 後，發佈為網路應用程式（Anyone/Anyone with link）。
-     取得 Web App URL（例如：https://script.google.com/.../exec）。
-  3) 回到本檔，設定 CONFIG.apiBase 為上一步的 Web App URL，CONFIG.adminKey 與 GAS 保持一致。
-  4) 將本檔上傳至任何靜態主機（GitHub Pages、Netlify、Vercel、雲端硬碟公開連結亦可）。
-  5) 分享「前台連結」給賓客（不要含 admin_key 參數）。
-     自己使用同一連結但在網址後加上 ?admin_key=你的密鑰 進後台。
-
-  ## 權限與隱私
-  - 前台完全不顯示統計，亦不提供查詢介面。
-  - 後台需 admin_key 方可讀取統計與明細。
-  - admin_key 僅做輕量存取保護，敏感場景建議再加 IP 白名單或以 Google 帳號限制（進階：GAS 實作 session）。
-
-  ## 參考資料
-  - Google Apps Script Web Apps：https://developers.google.com/apps-script/guides/web
-  - Spreadsheet Service：https://developers.google.com/apps-script/reference/spreadsheet
-  - Chart.js：https://www.chartjs.org/docs/latest/
-  ─────────────────────────────────────────────────────────────────────
-  -->
 </head>
 <body class="bg-pink-50 min-h-screen">
   <div class="max-w-4xl mx-auto p-6">
+    <!-- 頁首標題區 -->
     <header class="text-center mb-6">
       <h1 class="text-3xl font-bold text-pink-700">💌 婚宴出席回覆 RSVP</h1>
       <p class="text-gray-600">請填寫您的出席意願與人數，感謝！</p>
     </header>
 
-    <!-- 前台表單 -->
+    <!-- 前台表單區（所有人可見） -->
     <section id="section-form" class="card bg-white rounded-2xl p-6">
       <form id="rsvpForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 姓名（必填） -->
         <div class="md:col-span-1">
           <label class="block text-gray-700 font-medium">姓名 <span class="text-pink-600">*</span></label>
           <input name="name" type="text" required class="w-full border rounded-lg p-2 mt-1" placeholder="王小明" />
         </div>
+        <!-- 是否出席（必填） -->
         <div class="md:col-span-1">
           <label class="block text-gray-700 font-medium">是否出席 <span class="text-pink-600">*</span></label>
           <select name="attendance" required class="w-full border rounded-lg p-2 mt-1">
@@ -64,10 +37,12 @@
             <option value="no">不克出席</option>
           </select>
         </div>
+        <!-- 攜伴人數（預設 0） -->
         <div class="md:col-span-1">
           <label class="block text-gray-700 font-medium">攜伴人數</label>
           <input name="guests" type="number" min="0" value="0" class="w-full border rounded-lg p-2 mt-1" />
         </div>
+        <!-- 餐點偏好（一般/素食/兒童） -->
         <div class="md:col-span-1">
           <label class="block text-gray-700 font-medium">餐點偏好</label>
           <select name="meal" class="w-full border rounded-lg p-2 mt-1">
@@ -76,14 +51,17 @@
             <option value="child">兒童餐</option>
           </select>
         </div>
+        <!-- 食物過敏（選填） -->
         <div class="md:col-span-2">
           <label class="block text-gray-700 font-medium">食物過敏（選填）</label>
           <input name="allergies" type="text" class="w-full border rounded-lg p-2 mt-1" placeholder="例：花生、海鮮" />
         </div>
+        <!-- 備註（選填） -->
         <div class="md:col-span-2">
           <label class="block text-gray-700 font-medium">備註（選填）</label>
           <textarea name="note" rows="3" class="w-full border rounded-lg p-2 mt-1" placeholder="想對新人說的話…"></textarea>
         </div>
+        <!-- 送出按鈕與狀態顯示 -->
         <div class="md:col-span-2 flex items-center gap-3">
           <button type="submit" class="flex-1 bg-pink-600 text-white rounded-lg py-2 hover:bg-pink-700">送出回覆</button>
           <span id="formStatus" class="text-sm text-gray-500"></span>
@@ -91,10 +69,11 @@
       </form>
     </section>
 
-    <!-- 後台（僅持有 admin_key 可見） -->
+    <!-- 後台儀表板（僅帶 admin_key 才顯示） -->
     <section id="section-admin" class="hidden mt-8 grid grid-cols-1 gap-6">
+      <!-- 數字卡 + 圖表 -->
       <div class="card bg-white rounded-2xl p-6">
-        <h2 class="text-xl font-bold mb-2">📊 即時統計</h2>
+        <h2 class="text-xl font-bold mb-2">📊 即時統計（僅管理者）</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div class="bg-pink-50 rounded-xl p-4 text-center">
             <div class="text-sm text-gray-500">出席戶數</div>
@@ -114,13 +93,14 @@
           </div>
         </div>
         <canvas id="statsChart" height="120"></canvas>
-        <div class="text-right mt-2">
+        <div class="text-right mt-3">
           <button id="btnExport" class="px-3 py-2 bg-gray-800 text-white rounded-lg">匯出 CSV</button>
         </div>
       </div>
 
+      <!-- 明細表（僅管理者） -->
       <div class="card bg-white rounded-2xl p-6">
-        <h3 class="text-lg font-bold mb-3">明細列表（僅管理者）</h3>
+        <h3 class="text-lg font-bold mb-3">明細列表</h3>
         <div class="overflow-x-auto">
           <table class="min-w-full text-sm">
             <thead>
@@ -142,18 +122,20 @@
   </div>
 
   <script>
-    // ====== 可調整設定 ======
+    // ====== 可調整設定（必改） ======
     const CONFIG = {
-      apiBase: "https://script.google.com/macros/s/AKfycbzq5XJbjEHKMrY7V7UivNdNwur21tVlBVhygoqB_lQxuHjapKaF5qUR2mv1JVEp6Q2FQQ/exec", // ← Google Apps Script Web App URL
-      adminKey: "123456" // ← 與 GAS 端 ADMIN_KEY 一致
+      apiBase: "https://script.google.com/macros/s/【AKfycbxzyoijk5WxFAK-mk_KUNtrpbOtgUM0_yWwUfeCqOPLToqJx4GpuITUgEhdAKmdYC6Auw】/exec", // ← 你的 GAS Web App URL（/exec）
+      adminKey: "123456" // ← 與後端 ADMIN_KEY 一致
     };
 
-    // ====== 前台提交 ======
+    // 前台：提交表單
     const form = document.getElementById('rsvpForm');
     const formStatus = document.getElementById('formStatus');
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       formStatus.textContent = '送出中…';
+
+      // 取表單內容
       const fd = new FormData(form);
       const payload = {
         name: (fd.get('name')||'').trim(),
@@ -163,47 +145,52 @@
         allergies: (fd.get('allergies')||'').trim(),
         note: (fd.get('note')||'').trim()
       };
-      if(!payload.name || !payload.attendance){
+
+      // 簡單檢核
+      if (!payload.name || !payload.attendance) {
         formStatus.textContent = '請完整填寫必填欄位。';
         return;
       }
-      try{
+
+      try {
+        // 呼叫後端（POST JSON）
         const res = await fetch(CONFIG.apiBase, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action:'submit', data: payload })
+          body: JSON.stringify({ action: 'submit', data: payload })
         });
         const json = await res.json();
-        if(json.ok){
+        if (json.ok) {
           form.reset();
           formStatus.textContent = '已收到，謝謝您的回覆！';
-          setTimeout(()=>formStatus.textContent='',2500);
-        }else{
+          setTimeout(() => formStatus.textContent = '', 2500);
+        } else {
           formStatus.textContent = '送出失敗，請稍後再試。';
         }
-      }catch(err){
+      } catch (err) {
         console.error(err);
         formStatus.textContent = '連線發生問題。';
       }
     });
 
-    // ====== 後台：是否為管理者視圖 ======
+    // 決定是否顯示後台：?admin_key=...
     const params = new URLSearchParams(location.search);
     const adminKey = params.get('admin_key');
     const isAdmin = adminKey && adminKey === CONFIG.adminKey;
-    if(isAdmin){
+    if (isAdmin) {
       document.getElementById('section-admin').classList.remove('hidden');
       initAdmin();
     }
 
-    // ====== 後台統計與明細 ======
+    // 後台初始化
     let chart;
     async function initAdmin(){
       await refreshStats();
-      setInterval(refreshStats, 20*1000); // 每20秒更新一次
+      setInterval(refreshStats, 20*1000); // 每 20 秒更新一次
       document.getElementById('btnExport').addEventListener('click', exportCSV);
     }
 
+    // 後台拉統計 + 明細
     async function refreshStats(){
       try{
         const url = `${CONFIG.apiBase}?action=stats&admin_key=${encodeURIComponent(adminKey)}`;
@@ -211,21 +198,21 @@
         const json = await res.json();
         if(!json.ok) return;
         const { summary, rows } = json;
-        // 數字卡
-        document.getElementById('statYes').textContent = summary.yesCount;
-        document.getElementById('statNo').textContent = summary.noCount;
-        document.getElementById('statHeads').textContent = summary.expectedHeads;
-        document.getElementById('statVeg').textContent = summary.vegCount;
-        // 圖表
-        const data = {
-          labels: ['會出席','不克出席'],
-          datasets: [{ data: [summary.yesCount, summary.noCount] }]
-        };
-        const ctx = document.getElementById('statsChart').getContext('2d');
-        if(chart){ chart.destroy(); }
-        chart = new Chart(ctx, { type:'doughnut', data });
-        // 明細表
-        const tbody = document.getElementById('tbody');
+
+        // 更新數字卡
+        byId('statYes').textContent = summary.yesCount;
+        byId('statNo').textContent = summary.noCount;
+        byId('statHeads').textContent = summary.expectedHeads;
+        byId('statVeg').textContent = summary.vegCount;
+
+        // 更新圖表
+        const data = { labels: ['會出席','不克出席'], datasets: [{ data: [summary.yesCount, summary.noCount] }] };
+        const ctx = byId('statsChart').getContext('2d');
+        if(chart) chart.destroy();
+        chart = new Chart(ctx, { type: 'doughnut', data });
+
+        // 更新明細表
+        const tbody = byId('tbody');
         tbody.innerHTML = rows.map(r => `
           <tr class="border-t">
             <td class="p-2">${escapeHTML(r.timestamp)}</td>
@@ -235,112 +222,22 @@
             <td class="p-2">${r.meal==='veg'?'素食':(r.meal==='child'?'兒童':'一般')}</td>
             <td class="p-2">${escapeHTML(r.allergies||'')}</td>
             <td class="p-2">${escapeHTML(r.note||'')}</td>
-          </tr>`).join('');
-      }catch(err){ console.error(err); }
+          </tr>
+        `).join('');
+      }catch(err){
+        console.error(err);
+      }
     }
 
+    // 匯出 CSV（由後端直接產出）
     function exportCSV(){
-      // 由後端直接回傳 CSV 檔案連結會更有效率；此處示範前端觸發下載（以 stats 動作返回 csv 欄位為例）
       const url = `${CONFIG.apiBase}?action=export&admin_key=${encodeURIComponent(adminKey)}`;
       window.open(url, '_blank');
     }
 
-    function escapeHTML(s){
-      return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-    }
+    // 小工具
+    function byId(id){ return document.getElementById(id); }
+    function escapeHTML(s){ return (s||'').replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c])); }
   </script>
-
-  <!--
-  ─────────────────────────────────────────────────────────────────────
-  # Google Apps Script 程式（後端）
-  將下方內容貼到 Apps Script（Code.gs）。請先把 SHEET_ID 與 ADMIN_KEY 改成你的。
-  ─────────────────────────────────────────────────────────────────────
-  GAS_CODE_START
-  
-  const SHEET_ID = '【你的試算表ID】'; // 例如 https://docs.google.com/spreadsheets/d/這段就是ID/edit
-  const ADMIN_KEY = 'SET_A_SECRET';     // 與前端 CONFIG.adminKey 一致
-  const SHEET_NAME = '工作表1';         // 對應你的分頁名稱
-
-  function doPost(e){
-    try{
-      const body = JSON.parse(e.postData.contents);
-      if(body.action === 'submit'){
-        const ss = SpreadsheetApp.openById(SHEET_ID);
-        const sh = ss.getSheetByName(SHEET_NAME);
-        const d = body.data || {};
-        const row = [new Date(), d.name, d.attendance, Number(d.guests)||0, d.meal||'none', d.allergies||'', d.note||''];
-        sh.appendRow(row);
-        return json({ ok:true });
-      }
-      return json({ ok:false, error:'unknown action' });
-    }catch(err){
-      return json({ ok:false, error:String(err) });
-    }
-  }
-
-  function doGet(e){
-    const action = (e.parameter.action||'').toLowerCase();
-    if(action === 'stats'){
-      if((e.parameter.admin_key||'') !== ADMIN_KEY) return json({ ok:false, error:'unauthorized' }, 403);
-      const { summary, rows } = readAll();
-      return json({ ok:true, summary, rows });
-    }
-    if(action === 'export'){
-      if((e.parameter.admin_key||'') !== ADMIN_KEY) return json({ ok:false, error:'unauthorized' }, 403);
-      const { rows } = readAll();
-      const csv = toCSV(rows);
-      return ContentService.createTextOutput(csv).setMimeType(ContentService.MimeType.CSV);
-    }
-    return json({ ok:true, ping:true });
-  }
-
-  function readAll(){
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    const sh = ss.getSheetByName(SHEET_NAME);
-    const values = sh.getDataRange().getValues();
-    const header = values.shift();
-    const rows = values.map(r => ({
-      timestamp: Utilities.formatDate(new Date(r[0]), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss'),
-      name: String(r[1]||''),
-      attendance: String(r[2]||''),
-      guests: Number(r[3]||0),
-      meal: String(r[4]||'none'),
-      allergies: String(r[5]||''),
-      note: String(r[6]||'')
-    }));
-    const yes = rows.filter(r=>r.attendance==='yes');
-    const no = rows.filter(r=>r.attendance==='no');
-    const veg = rows.filter(r=>r.meal==='veg');
-    const heads = yes.reduce((acc,r)=> acc + 1 + (Number(r.guests)||0), 0);
-    return {
-      summary: { yesCount: yes.length, noCount: no.length, expectedHeads: heads, vegCount: veg.length },
-      rows
-    };
-  }
-
-  function toCSV(rows){
-    const header = ['Timestamp','Name','Attendance','Guests','Meal','Allergies','Note'];
-    const data = rows.map(r => [r.timestamp,r.name,r.attendance,r.guests,r.meal,r.allergies,r.note]);
-    const all = [header, ...data];
-    return all.map(line => line.map(field => {
-      if(typeof field === 'string' && /[",\n]/.test(field)){
-        return '"' + field.replace(/"/g,'""') + '"';
-      }
-      return String(field);
-    }).join(',')).join('\n');
-  }
-
-  function json(obj, status){
-    const out = ContentService.createTextOutput(JSON.stringify(obj));
-    out.setMimeType(ContentService.MimeType.JSON);
-    if(status) return out.setHeader('X-Status', String(status));
-    return out;
-  }
-  
-  // 部署：發佈 → 部署為網路應用程式 → 設定存取權（建議：任何知道連結者）
-  // 更新程式後需重新部署取得新版 URL。
-  
-  GAS_CODE_END
-  -->
 </body>
 </html>
